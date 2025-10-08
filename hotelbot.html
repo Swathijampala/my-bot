@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AWS Lex Chatbot</title>
+  <style>
+    body { font-family: Arial; margin: 50px; text-align: center; }
+    input { width: 300px; padding: 10px; }
+    button { padding: 10px 15px; }
+    #chat { margin-top: 20px; white-space: pre-line; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; }
+  </style>
+</head>
+<body>
+  <h2>💬 AWS Lex Chatbot</h2>
+  <input id="msg" placeholder="Type a message..." />
+  <button onclick="send()">Send</button>
+  <div id="chat"></div>
+
+  <script>
+    const API_URL = "https://qk0m1soby9.execute-api.ap-southeast-1.amazonaws.com/chat"; // replace with your API URL
+    let sessionId = "user-" + Date.now(); // generate once per page load
+
+    async function send() {
+      const input = document.getElementById("msg");
+      const text = input.value;
+      if (!text) return;
+      input.value = "";
+
+      const chatDiv = document.getElementById("chat");
+      chatDiv.innerText += `You: ${text}\n`;
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text, sessionId: sessionId })
+        });
+
+        const data = await res.json();
+
+        // Keep the same sessionId returned by Lambda
+        sessionId = data.sessionId || sessionId;
+
+        chatDiv.innerText += `Bot: ${data.botResponse}\n\n`;
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+
+      } catch (err) {
+        chatDiv.innerText += `Error: ${err.message}\n\n`;
+      }
+    }
+  </script>
+</body>
+</html>
