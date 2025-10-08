@@ -1,53 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>AWS Lex Chatbot</title>
-  <style>
-    body { font-family: Arial; margin: 50px; text-align: center; }
-    input { width: 300px; padding: 10px; }
-    button { padding: 10px 15px; }
-    #chat { margin-top: 20px; white-space: pre-line; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; }
-  </style>
+<meta charset="UTF-8">
+<title>My Lex V2 Bot</title>
+<style>
+body { font-family: Arial; background: #f4f4f4; }
+.chat-container { max-width: 500px; margin: 50px auto; padding: 20px; background: #fff; border-radius: 10px; }
+.messages { height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
+.message.user { color: blue; }
+.message.bot { color: green; }
+input { width: 80%; padding: 10px; }
+button { padding: 10px 15px; }
+</style>
 </head>
 <body>
-  <h2>AWS Lex Chatbot</h2>
-  <input id="msg" placeholder="Type a message..." />
-  <button onclick="send()">Send</button>
-  <div id="chat"></div>
+<div class="chat-container">
+    <div class="messages" id="chatMessages"></div>
+    <input type="text" id="userMessage" placeholder="Type your message...">
+    <button id="sendBtn">Send</button>
+</div>
 
-  <script>
-    const API_URL = "https://qk0m1soby9.execute-api.ap-southeast-1.amazonaws.com/chat"; // replace with your API URL
-    let sessionId = "user-" + Date.now(); // generate once per page load
+<script>
+const apiURL = "https://qk0m1soby9.execute-api.ap-southeast-1.amazonaws.com/"; // Replace with your API Gateway URL
 
-    async function send() {
-      const input = document.getElementById("msg");
-      const text = input.value;
-      if (!text) return;
-      input.value = "";
+async function sendMessage(message) {
+    const chatBox = document.getElementById("chatMessages");
 
-      const chatDiv = document.getElementById("chat");
-      chatDiv.innerText += `You: ${text}\n`;
+    // Display user message
+    const userDiv = document.createElement("div");
+    userDiv.className = "message user";
+    userDiv.textContent = "You: " + message;
+    chatBox.appendChild(userDiv);
 
-      try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text, sessionId: sessionId })
+    try {
+        const response = await fetch(apiURL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message })
         });
 
-        const data = await res.json();
+        const data = await response.json();
 
-        // Keep the same sessionId returned by Lambda
-        sessionId = data.sessionId || sessionId;
+        // Lex V2 can return multiple messages
+        const botReply = Array.isArray(data.reply) ? data.reply.join(" ") : data.reply;
 
-        chatDiv.innerText += `Bot: ${data.botResponse}\n\n`;
-        chatDiv.scrollTop = chatDiv.scrollHeight;
+        const botDiv = document.createElement("div");
+        botDiv.className = "message bot";
+        botDiv.textContent = "Bot: " + botReply;
+        chatBox.appendChild(botDiv);
 
-      } catch (err) {
-        chatDiv.innerText += `Error: ${err.message}\n\n`;
-      }
+        chatBox.scrollTop = chatBox.scrollHeight;
+    } catch (err) {
+        console.error(err);
+        const botDiv = document.createElement("div");
+        botDiv.className = "message bot";
+        botDiv.textContent = "Bot: Unable to fetch response.";
+        chatBox.appendChild(botDiv);
     }
-  </script>
+}
+
+document.getElementById("sendBtn").addEventListener("click", () => {
+    const input = document.getElementById("userMessage");
+    if(input.value.trim()) {
+        sendMessage(input.value.trim());
+        input.value = "";
+    }
+});
+</script>
 </body>
 </html>
 
+    
+        
